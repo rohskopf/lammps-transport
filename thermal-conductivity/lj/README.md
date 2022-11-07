@@ -19,4 +19,4 @@ converged:
 
 ![alt text](https://github.com/rohskopf/lammps-transport/blob/main/thermal-conductivity/lj/correlation_plot.png?raw=true)
 
-Notice that the correlation time window is 8000 fs. This corresponds to `dt*Nrepeat*Nevery` in our `in.run` file. Different systems may need longer correlation time windows to converge; these needs to be experimented with. 
+Notice that the correlation time window is 8000 fs. This corresponds to `dt * Nrepeat * Nevery` in our `in.run` file. Different systems may need longer correlation time windows to converge; this needs to be experimented with. For high thermal conductivity systems (diamond, Si, etc.), it recommended `dt * Nrepeat * Nevery > 1 ns`. For most other materials, `dt * Nrepeat * Nevery ~ 100 ps` is fine. For liquids, `dt * Nrepeat * Nevery ~ 10 ps` or lower may be sufficient. 
