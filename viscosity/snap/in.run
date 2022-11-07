@@ -1,0 +1,105 @@
+#echo screen
+
+# variables
+
+variable T equal 7550
+variable V equal vol
+variable dt equal 0.0005
+variable Nevery equal 5 # sample interval
+variable Nrepeat equal 400 # correlation length
+variable Nfreq equal ${Nevery}*${Nrepeat} # dump interval
+
+# convert from LAMMPS metal units to SI
+
+variable kB equal 1.3806504e-23 # J/K
+variable eV2J equal 1.6022e-19 # 1 eV = 1.6022e-19 J
+variable bar2Pa equal 1e5
+variable A2m equal 1.0e-10 
+variable ps2s equal 1.0e-12
+variable convert equal ${bar2Pa}*${bar2Pa}*${ps2s}*${A2m}*${A2m}*${A2m}
+
+# atom settings
+ 
+newton on
+boundary	 	 p p p
+units	 	 	 metal
+atom_style	 	 spin #atomic
+atom_modify map array
+
+#read_restart restart.equil
+read_data DATA_RELAXED
+
+# Input variables
+variable nthermo equal ${Nfreq} # for production run
+variable modeheatflux_setting equal 0
+variable nsteps equal 200000 # Number of timesteps in production run.
+                             # 4e5 timesteps = 200 ps
+variable temperature equal 7550.0 # Desired simulation temperature.
+variable nsteps_nve equal 50000 # Number of timesteps in NVE equilibration.
+
+# Post process variables
+#variable nsteps_total equal ${nsteps}+${nsteps_nvt}+${nsteps_nve} # Combined total timesteps of all runs
+
+# Define regions and groups
+
+# Neighborlist commands
+neighbor    1.0 bin
+
+# Potential
+include pot1.mod
+
+# Computes
+compute      myKE all ke/atom
+compute      myPE all pe/atom
+compute      myStress all stress/atom NULL virial
+compute flux all heat/flux myKE myPE myStress
+compute compute_spin all spin
+
+# Initialize velocity, thermo settings, timestep and ensemble
+#velocity	 all create ${temperature_velocity} 10101 rot yes mom yes
+thermo ${Nfreq}
+thermo_style custom step etotal temp pe press c_compute_spin[4] c_compute_spin[6] #c_myFlux[1]
+timestep 0.0005
+
+# Equilibrate in NVE
+fix 1 all nve/spin lattice moving
+fix 2 all langevin 7550 7550 1.0 2010101
+fix 3 all langevin/spin 7550 0.01 2010101
+run ${nsteps_nve}
+unfix 1
+unfix 2
+unfix 3
+
+# New thermo setting for heat flux output
+#thermo  	 ${Nfreq} 
+#thermo_style custom step etotal temp pe press c_compute_spin[4] c_compute_spin[6] c_myFlux[1]
+
+variable pxy equal pxy
+variable pxz equal pxz
+variable pyz equal pyz
+fix SS all ave/correlate ${Nevery} ${Nrepeat} ${Nfreq} &
+    v_pxy v_pxz v_pyz type auto file S0St.dat ave running
+variable scale equal ${convert}/(${kB}*$T)*$V*${Nevery}*${dt}
+
+variable v11 equal trap(f_SS[3])*${scale}
+variable v22 equal trap(f_SS[4])*${scale}
+variable v33 equal trap(f_SS[5])*${scale}
+
+thermo_style custom step temp press v_pxy v_pxz v_pyz v_v11 v_v22 v_v33
+
+# Production run
+fix 1 all nve/spin lattice moving
+fix 2 all langevin/spin 7550 0.01 2010101
+
+run ${nsteps}
+
+#variable k equal (v_k11+v_k22+v_k33)/3.0
+variable v equal (v_v11+v_v22+v_v33)/3.0
+variable ndens equal count(all)/vol
+
+print "average viscosity: $v [Pa.s] @ $T K, ${ndens} /A\^3"
+
+#write_data DATA_RELAXED
+write_restart restart.production
+
+
