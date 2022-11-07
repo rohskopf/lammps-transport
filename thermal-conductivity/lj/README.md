@@ -15,4 +15,8 @@ As you can see from the output `correlation_plot.png`, the HFACF converged to ne
 correlation time window. This means that our system is in equilibrium and we can rely on the 
 time-integral of this correlation to give us thermal conductivity. That integral is alredy 
 calculated in the `in.run` LAMMPS script, but this plot tells us that the calculation is properly
-converged. 
+converged:
+
+![alt text](https://github.com/rohskopf/lammps-transport/blob/main/thermal-conductivity/lj/correlation_plot.png?raw=true)
+
+
