@@ -13,7 +13,7 @@ we calculated thermal conductivity properly, we must look at the heat flux autoc
 
 As you can see from the output `correlation_plot.png`, the HFACF converged to near-zero within the 
 correlation time window. This means that our system is in equilibrium and we can rely on the 
-time-integral of this correlation to give us thermal conductivity. That integral is alredy 
+time-integral of this correlation to give us thermal conductivity. That integral is already 
 calculated in the `in.run` LAMMPS script, but this plot tells us that the calculation is properly
 converged:
 
