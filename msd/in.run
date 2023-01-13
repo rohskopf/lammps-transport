@@ -1,0 +1,57 @@
+# Initialize simulation
+
+variable nsteps index 250000
+
+units           metal
+
+# generate the box and atom positions using a BCC lattice
+
+read_data DATA_300K
+
+mass 1 6.941
+mass 2 72.64
+mass 3 30.97
+mass 4 32.065
+
+
+# Specify potential
+
+pair_style pod
+pair_coeff * * pod14.txt pod_coefficients.pod Li Ge P S
+
+# Setup output
+
+compute  eatom all pe/atom
+compute  energy all reduce sum c_eatom
+
+compute  satom all stress/atom NULL
+compute  str all reduce sum c_satom[1] c_satom[2] c_satom[3]
+variable press equal (c_str[1]+c_str[2]+c_str[3])/(3*vol)
+
+thermo_style    custom step temp epair c_energy etotal press v_press
+thermo          100
+thermo_modify norm yes
+
+# Set up run
+
+timestep 2e-3 #0.25e-3
+neighbor 1.0 bin
+neigh_modify once no every 1 delay 0 check yes
+
+# Equilibrate
+
+dump 1 all xyz 100 dump.xyz
+#dump 2 all custom 100 dump.forces fx fy fz
+velocity all create 600.0 101011 rot yes mom yes #loop geom
+fix 1 all nvt temp 600.0 600.0 0.08
+run             5000
+undump 1
+unfix 1
+
+# Run MD
+
+dump 1 all custom 1 dump.lammpstrj id type xu yu zu
+dump 2 all custom 100 dump.forces fx fy fz
+fix 1 all nvt temp 600.0 600.0 0.08
+run             ${nsteps}
+undump 1
