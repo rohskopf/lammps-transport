@@ -1,0 +1,41 @@
+# Variables
+variable TEMP equal 600 # temperature
+variable dt equal 0.5e-3 # timestep
+variable    L1 equal 4 # box size in lattice unit 
+variable    L2 equal 4 # box size in lattice unit 
+variable    L3 equal 4 # box size in lattice unit 
+variable  a equal 5.431 # lattice constant 
+
+# Neighbor settings
+neighbor    1.0 bin
+neigh_modify every 10 delay 0 check yes
+ 
+# Box, units, atom style, lattice, and mass
+boundary p p p
+units metal
+atom_style atomic
+lattice diamond ${a}
+region box block 0 ${L1} 0 ${L2} 0 ${L3} units lattice  
+create_box 1 box  
+create_atoms 1 box  
+mass 1 27.9 # Si
+
+# Declare potential
+pair_style tersoff
+pair_coeff * * Si.tersoff Si
+
+# Initial velocity and thermo settings
+comm_modify  vel yes
+velocity all create ${TEMP} 10101 rot yes mom yes # initial velocities
+thermo 1000
+thermo_style custom step pe ke press vol
+
+# Run MD and dump positions
+fix 1 all nve
+timestep  ${dt}	 	 	 	  
+run 2000
+
+dump 1 all custom 5 dump.lammpstrj id type x y z vx vy vz
+run 40000
+unfix 1
+undump 1
